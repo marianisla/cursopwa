@@ -18,7 +18,8 @@ self.addEventListener('fetch', e => {
     //cambio de ícono por otro
     if (request.url.includes('logo.png')) {
 
-        response = fetch('images/icons/logo_offline.png');
+        //response = fetch('images/icons/logo_offline.png');
+        response = fetch(request);
 
     } else {
         
