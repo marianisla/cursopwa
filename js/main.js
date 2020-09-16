@@ -1,194 +1,146 @@
-let listaProductos = [];
-let template;
-const endpoint = 'https://5f596df68040620016ab9111.mockapi.io/lista';
+//let listaProductos = [];
+//let template;
 
-function borrarProducto(id) {
-    //console.log(id);
+//Main Module
+let main = (()=>{
+
+    //variables y mètodos publicos
+    init = () => {
+        registrarServiceWorker();
+        addListeners();
+        renderTemplate();
+    };
+
+    Api = {
+
+        //endpoint : 'https://5f596df68040620016ab9111.mockapi.io/lista/',
+        endpoint : 'https://5f61455307c1770016c51efb.mockapi.io/api/producto/',
     
-    /* deleteProductoWeb(id, ()=> {
-        renderLista();
-    }); */
-
-    Api.deleteItem(id);
-}
-
-function cambiarCantidad(id, e) {
-    const cantidad = Number(e.value);
-    const index = listaProductos.findIndex(prod => prod.id == id);
-
-    listaProductos[index].cantidad = cantidad;
-    const nuevoProducto = listaProductos[index];
-
-    updateProductoWeb(id, nuevoProducto, () => {
-        console.log('Modificado correctamente');
-    })
-}
-
-function cambiarPrecio(id, e) {
-    const precio = Number(e.value);
-    const index = listaProductos.findIndex(prod => prod.id == id);
+        deleteItem : (id) => {
+            Api.callAction('delete',id)
+        },
     
-    listaProductos[index]['precio'] = precio;
-    const nuevoProducto = listaProductos[index];
+        updateItem : (id, comp, prop) => {
+            const val = Number(comp.value);
+            const index = listaProductos.findIndex(prod => prod.id == id);
+            listaProductos[index][prop] = val;
+            const nuevoProducto = listaProductos[index];
+            Api.callAction('put', id, nuevoProducto);
+        }, 
     
-    updateProductoWeb(id, nuevoProducto, () => {
-        console.log('Modificado correctamente');
-    })
-}
-
-function configurarListeners() {
-
-    $('#btn_entrada_producto').click(() => {
-        const inputProducto = $('#ingreso_producto');
-
-        let prod = inputProducto.val();
-        if (prod !== '') {
-            const producto = {
-                nombre: prod,
-                cantidad: 0,
-                precio: 0
-            };
-
-            inputProducto.val('');
-            inputProducto.focus();
-/* 
-            postProductoWeb(producto, prod => {
-                Api.getItems();
-            }) */
-
-            Api.addItem(producto);
-
-        }
-    });
-    $('#btn_borrar_todos_productos').click(() => {
-        /* listaProductos = [];
-        Api.getItems(); */
-
-        console.log('//TODO: IMPLEMENTAR');
-
-    })
-}
-
-
-//function renderList() {
-    /* $.get('templates/lista-productos.hbs', source => {
-        const template = Handlebars.compile(source);
-    */     
-/*         getProductosWeb((productosResponse) => {
-            listaProductos = productosResponse;
-            $('#lista').html(template({listaProductos}))
-            componentHandler.upgradeElements($('#lista'));
-        }); */
-
-   /*  }).fail(err => {
-        console.error('Error al intentar traer el template');
-    }) */
-//}
-
-function renderTemplate() {
-    $.get('templates/lista-productos.hbs', source => {
-        template = Handlebars.compile(source);
-        Api.getItems();
-    }).fail(err => {
-        console.error('Error al intentar traer el template');
-    })
-}
-
-function getProductosWeb(callactionback) {
-    $.get(endpoint, callactionback)
-    .fail(err => {
-        console.log(err);
-    })
-}
-
-function deleteProductoWeb(id, callactionback) {
-    $.ajax({url: `${endpoint}/${id}`, method: 'delete'})
-    .then(callactionback)
-    .fail(err => {
-        console.log(err);
-    })
-}
-
-function updateProductoWeb(id, producto, callactionback) {
-    $.ajax({url: `${endpoint}/${id}`, data: producto, method: 'put'})
-    .then(callactionback)
-    .fail(err => {
-        console.log(err);
-    })
-}
-
-function postProductoWeb(producto, callactionback) {
-    $.ajax({url: `${endpoint}`, data: producto, method: 'post'})
-    .then(callactionback)
-    .fail(err => {
-        console.log(err);
-    })
-}
-
-
-
-function registrarServiceWorker() {
-    if ('serviceWorker' in navigator) {
-        window.addEventListener('load', function () {
-            this.navigator.serviceWorker.register('./sw.js').then(function (reg) {
-                /* console.log('El service worker se registró correctamente', reg) */
+        addItem: (item) => {
+            Api.callAction('post',null,item)
+        },
+    
+        getItems: () => {
+            $.get(Api.endpoint, (productosResponse) => {
+                listaProductos = productosResponse;
+                $('#lista').html(template({listaProductos}));
+                componentHandler.upgradeElements($('#lista'));
             })
-                .catch(function (err) {
-                    console.warn('Error al registrar el service worker', err)
+            .fail(err => {
+                console.log(err);
+            })
+        },
+    
+        callAction : (action,id=null,data=null) => {
+    
+            var request = { url: Api.endpoint + ((id) ? id : '') , data:data , method:action };
+    
+            $.ajax(request)
+            .done( Api.getItems() )
+            .fail(err => {
+                console.log(err);
+            })
+        }
+    
+    }
+
+    //variables y métodos privados
+    listaProductos = [];
+    template = '';
+
+    components = {
+
+        addItemBtn : $('#btn_entrada_producto'),
+        addItemInput : $('#ingreso_producto'),
+        deleteAllBtn : $('#btn_borrar_todos_productos'),
+
+        cleanInput : () => {
+            components.addItemInput.val('');
+            components.addItemInput.focus();
+        }
+
+    }
+
+    //registramos eventos
+    addListeners = () => {
+        components.addItemBtn.click(() => {
+    
+            let prod = components.addItemInput.val();
+            if (prod !== '') {
+                const producto = {
+                    nombre: prod,
+                    cantidad: 0,
+                    precio: 0
+                };
+    
+                components.cleanInput();
+    
+                Api.addItem(producto);
+    
+            }
+        });
+
+        components.deleteAllBtn.click(() => {
+            
+            console.log('borrar todo');
+
+            //listaProductos = [];
+            
+            /*if(listaProductos.length==0){
+                console.log('No hay productos');
+                return;
+            }
+    
+            listaProductos.forEach(producto => {
+                console.log(producto.nombre +' - id:'+ producto.id);
+                Api.deleteItem(producto.id);
+            });*/
+    
+        });
+    }
+
+    renderTemplate = () => {
+        $.get('templates/lista-productos.hbs', source => {
+            template = Handlebars.compile(source);
+            
+            Api.getItems();
+    
+        }).fail(err => {
+            console.error('Error al intentar traer el template');
+        })
+    };
+
+    registrarServiceWorker = () => {
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function () {
+                this.navigator.serviceWorker.register('./sw.js').then(function (reg) {
+                    /* console.log('El service worker se registró correctamente', reg) */
                 })
-        })
-    }
-}
+                    .catch(function (err) {
+                        console.warn('Error al registrar el service worker', err)
+                    })
+            })
+        }
+    };
 
-var Api = {
-
-    endpoint : 'https://5f596df68040620016ab9111.mockapi.io/lista',
-
-    deleteItem : (id) => {
-        Api.callaction('delete',id);
-    },
-
-    updateItem : (id, comp, prop) => {
-        const val = Number(comp.value);
-        const index = listaProductos.findIndex(prod => prod.id == id);
-        listaProductos[index][prop] = val;
-        const nuevoProducto = listaProductos[index];
-        Api.callaction('put', id, nuevoProducto);
-    }, 
-
-    addItem: (item) => {
-        Api.callaction('post',null,item);
-    },
-
-    getItems: () => {
-        $.get(endpoint, (productosResponse) => {
-            listaProductos = productosResponse;
-            $('#lista').html(template({listaProductos}));
-            componentHandler.upgradeElements($('#lista'));
-        })
-        .fail(err => {
-            console.log(err);
-        })
-    },
-
-    callaction : (action,id=null,data=null) => {
-
-        var request = { url: `${endpoint}/` + ((id) ? id : '') , data:data , method:action };
-
-        $.ajax(request)
-        .then( Api.getItems() )
-        .fail(err => {
-            console.log(err);
-        })
+    return {
+        init : init,
+        Api : Api
     }
 
-}
+})();
 
-function start() {
-    registrarServiceWorker();
-    configurarListeners();
-    //renderizamos template
-    renderTemplate();
-}
 
-$(document).ready(start);
+$(document).ready( main.init() );
